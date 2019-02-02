@@ -1,2 +1,1 @@
-import .hijack
 import .command

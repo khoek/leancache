@@ -6,17 +6,8 @@ namespace tcache
 
 def CACHE_DIR := ".cache"
 
-def exec_cmd (args : io.process.spawn_args) : io unit := do
-let cmdstr := string.intercalate " " (args.cmd :: args.args),
-io.put_str_ln $ "> " ++
-  match args.cwd with
-  | some cwd := cmdstr ++ "    # in directory " ++ cwd
-  | none := cmdstr
-  end,
-ch ← spawn args,
-exitv ← wait ch,
-when (exitv ≠ 0) $ io.fail $
-  "external command exited with status " ++ repr exitv
+def exec_cmd (args : io.process.spawn_args) : io unit :=
+spawn args >> return ()
 
 def mk_cache_dir : io unit :=
   exec_cmd {cmd := "mkdir", args := ["-p", CACHE_DIR], stdout := io.process.stdio.null, stderr := io.process.stdio.null}

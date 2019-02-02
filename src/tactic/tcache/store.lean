@@ -27,14 +27,14 @@ end
 
 meta def trace {α : Type u} [has_to_tactic_format α] (hash : string) (a : thunk α) : tactic unit := do
   f ← has_to_tactic_format.to_tactic_format $ a (),
-  when_tracing `tcache $ tactic.trace $ format!"tc: @{hash}\n - {f}"
+  when_tracing `tcache $ tactic.trace $ format!"tc@{hash} - {f}"
 
 meta def timeit {α : Type u} (hash s : string) (f : thunk α) : α :=
-if is_trace_enabled_for `tcache then _root_.timeit sformat!"tc: @{hash}\n - {s}" (f ())
+if is_trace_enabled_for `tcache then _root_.timeit sformat!"tc@{hash} - {s}" (f ())
 else f ()
 
 meta def timetac {α : Type u} (hash s : string) (f : thunk (tactic α)) : tactic α :=
-if is_trace_enabled_for `tcache then tactic.timetac sformat!"tc: @{hash}\n - {s}" (f ())
+if is_trace_enabled_for `tcache then tactic.timetac sformat!"tc@{hash} - {s}" (f ())
 else f ()
 
 meta def sanitize_expr : expr → expr
@@ -72,10 +72,7 @@ meta def fixup_local_consts (lc : list expr) : expr → nat → option expr
 
 variables (hash : string)
 
-meta def solve_goal (pf : expr) : tactic unit := do
-  exact pf,
-  done,
-  trace hash "success"
+meta def solve_goal (pf : expr) : tactic unit := exact pf >> done
 
 meta def deserialise_proof : io expr := do
   h ← io.mk_file_handle (cache_file_name hash) io.mode.read tt,
@@ -89,8 +86,8 @@ meta def handle_recall_failed (pf : expr) (msg : string) : tactic unit := do
 
 meta def try_cache (n : name) (lc : list expr) : tactic unit := do
   pf ← timetac hash "deserialising proof" $ unsafe_run_io $ deserialise_proof hash,
-  let pf := timeit hash "fixup" (pf.replace $ fixup_local_consts lc),
-  interaction_monad_orelse' (solve_goal hash pf) (handle_recall_failed hash pf)
+  let pf := timeit hash "loading proof took" (pf.replace $ fixup_local_consts lc),
+  interaction_monad_orelse' (solve_goal pf) (handle_recall_failed hash pf)
 
 meta def put_cache (n : name) (lc : list expr) (e : expr) : tactic unit := do
   interaction_monad_orelse' (do
@@ -108,9 +105,8 @@ meta def execute_capture (n : name) (t : tactic unit) : tactic expr := do
   instantiate_mvars m
 
 meta def try_recompute (n : name) (lc : list expr) (hash : string) (t : tactic unit) : tactic unit := do
-  trace hash "regenerating proof",
-  e ← execute_capture n t,
-  trace hash "success",
+  trace hash "need to regenerate proof",
+  e ← timetac hash "success, took" $ execute_capture n t,
   put_cache hash n lc e
 
 meta def discharge_goals (t : tactic unit) : tactic unit := do
