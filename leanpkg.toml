@@ -1,8 +1,8 @@
 [package]
 name = "leancache"
 version = "0.1"
-lean_version = "nightly-2018-11-13"
+lean_version = "khoek/klean:3.4.7"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "51f95e4e37a4e6742afbd19fbb6008995dee4c2f"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "f529870e34eb5370ae8ac1f49f728547e4f6bbe5"}
